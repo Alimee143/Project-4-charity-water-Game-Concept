@@ -81,6 +81,11 @@ function spawnCollectible() {
 const charityWaterImg = new Image();
 charityWaterImg.src = 'charitywater.png'; // Make sure this path is correct
 
+charityWaterImg.onload = () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawCharityWaterBrand();
+};
+
 function drawDrop() {
   const iconWidth = 70;
   const iconHeight = 85;
@@ -429,3 +434,16 @@ function drawCharityWaterBrand() {
 
   ctx.restore();
 }
+
+// Draw the brand on initial load
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+drawCharityWaterBrand();
+
+window.addEventListener('DOMContentLoaded', () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawCharityWaterBrand();
+});
+
+// Also call drawCharityWaterBrand() at the start of your gameLoop as you already do
+
+// Optionally, if you want it to update on window resize or other events, you can call it again as needed.
