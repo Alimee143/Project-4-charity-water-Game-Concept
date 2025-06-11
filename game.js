@@ -4,6 +4,11 @@ const startBtn = document.getElementById('startBtn');
 const scoreDiv = document.getElementById('score');
 const factBox = document.getElementById('factBox');
 
+const popperLeft = document.getElementById('popper-left');
+const popperRight = document.getElementById('popper-right');
+
+const pauseBtn = document.getElementById('pauseBtn');
+
 const facts = [
   "771 million people lack access to clean water.",
   "Women and girls spend 200 million hours every day collecting water.",
@@ -12,11 +17,17 @@ const facts = [
 ];
 
 let gameActive = false;
+let paused = false;
 let score = 0;
 let drop = { x: 200, y: 500, radius: 20 };
 let obstacles = [];
 let collectibles = [];
 let speed = 2;
+let animationId = null; // Add this at the top with your other variables
+
+// Track last milestone for party popper
+let lastPopperScore = 0;
+let lives = 3;
 
 function resetGame() {
   score = 0;
@@ -24,7 +35,20 @@ function resetGame() {
   obstacles = [];
   collectibles = [];
   speed = 2;
+  lives = 3;
+  updateLivesDisplay();
   scoreDiv.textContent = "Score: 0";
+  paused = false;
+  pauseBtn.textContent = "Pause";
+}
+
+function updateLivesDisplay() {
+  for (let i = 1; i <= 3; i++) {
+    const heart = document.getElementById(`life${i}`);
+    if (heart) {
+      heart.classList.toggle('lost', i > lives);
+    }
+  }
 }
 
 function randomX() {
@@ -136,8 +160,90 @@ function drawCollectibles() {
     ctx.closePath();
     ctx.fillStyle = '#2196f3';
     ctx.fill();
+
+    // Draw eyes
+    ctx.beginPath();
+    ctx.arc(-c.size * 0.25, -c.size * 0.2, c.size * 0.10, 0, Math.PI * 2); // Left eye
+    ctx.arc(c.size * 0.25, -c.size * 0.2, c.size * 0.10, 0, Math.PI * 2);  // Right eye
+    ctx.fillStyle = '#222';
+    ctx.fill();
+
+    // Draw nose (small oval)
+    ctx.beginPath();
+    ctx.ellipse(0, 0, c.size * 0.07, c.size * 0.13, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#1565c0';
+    ctx.fill();
+
     ctx.restore();
   });
+}
+
+// Add a fullscreen button to the top-right corner
+const fullscreenBtn = document.createElement('button');
+fullscreenBtn.textContent = '⛶';
+fullscreenBtn.title = 'Fullscreen';
+fullscreenBtn.style.position = 'absolute';
+fullscreenBtn.style.top = '10px';
+fullscreenBtn.style.right = '10px';
+fullscreenBtn.style.fontSize = '1.5em';
+fullscreenBtn.style.background = '#0288d1';
+fullscreenBtn.style.color = '#fff';
+fullscreenBtn.style.border = 'none';
+fullscreenBtn.style.borderRadius = '5px';
+fullscreenBtn.style.cursor = 'pointer';
+fullscreenBtn.style.zIndex = 10;
+document.body.appendChild(fullscreenBtn);
+
+// Fullscreen logic
+fullscreenBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+});
+
+// Draw party popper explosion in the top-right corner at each 200-point milestone
+function drawPartyPoppers() {
+  if (score >= 200 && score % 200 < 20) {
+    // Top-right corner popper
+    ctx.save();
+    ctx.translate(canvas.width - 40, 40);
+    drawPopperShape();
+    drawPopperExplosion();
+    ctx.restore();
+  }
+}
+
+// Helper to draw a simple party popper
+function drawPopperShape() {
+  // Cone
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-12, 30);
+  ctx.lineTo(12, 30);
+  ctx.closePath();
+  ctx.fillStyle = "#ffb300";
+  ctx.fill();
+
+  // Top circle
+  ctx.beginPath();
+  ctx.arc(0, 0, 8, 0, Math.PI * 2);
+  ctx.fillStyle = "#e040fb";
+  ctx.fill();
+}
+
+// Helper to draw an explosion of confetti
+function drawPopperExplosion() {
+  for (let i = 0; i < 16; i++) {
+    ctx.save();
+    ctx.rotate((Math.PI * 2 * i) / 16);
+    ctx.beginPath();
+    ctx.arc(0, -35, 4, 0, Math.PI * 2);
+    ctx.fillStyle = ["#ff5252", "#ffd600", "#69f0ae", "#40c4ff"][i % 4];
+    ctx.fill();
+    ctx.restore();
+  }
 }
 
 function moveEntities() {
@@ -146,16 +252,6 @@ function moveEntities() {
 }
 
 function checkCollisions() {
-  // Obstacles
-  for (let o of obstacles) {
-    let dx = drop.x - o.x;
-    let dy = drop.y - o.y;
-    let dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist < drop.radius + o.size) {
-      endGame();
-      return;
-    }
-  }
   // Collectibles
   collectibles = collectibles.filter(c => {
     let dx = drop.x - c.x;
@@ -168,6 +264,23 @@ function checkCollisions() {
     }
     return true;
   });
+
+  // Obstacles
+  for (let o of obstacles) {
+    let dx = drop.x - o.x;
+    let dy = drop.y - o.y;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < drop.radius + o.size) {
+      lives--;
+      updateLivesDisplay();
+      if (lives <= 0) {
+        endGame();
+      }
+      // Remove the obstacle that was hit
+      obstacles = obstacles.filter(obj => obj !== o);
+      break;
+    }
+  }
 }
 
 function endGame() {
@@ -177,13 +290,27 @@ function endGame() {
   startBtn.disabled = false;
 }
 
+function updatePartyPoppers() {
+  // Show for 1.5 seconds at each 200-point milestone
+  if (score > 0 && score % 200 === 0 && gameActive) {
+    popperLeft.classList.remove('hidden');
+    popperRight.classList.remove('hidden');
+    setTimeout(() => {
+      popperLeft.classList.add('hidden');
+      popperRight.classList.add('hidden');
+    }, 1500);
+  }
+}
+
+// Call this in your gameLoop after updating the score
 function gameLoop() {
-  if (!gameActive) return;
+  if (!gameActive || paused) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   drawDrop();
   drawObstacles();
   drawCollectibles();
+  drawLives(); // <-- Add this line
   moveEntities();
   checkCollisions();
 
@@ -204,8 +331,32 @@ function gameLoop() {
     speed = 4.5 + (score - 200) * 0.02;
   }
 
-  requestAnimationFrame(gameLoop);
+  updatePartyPoppers();
+
+  animationId = requestAnimationFrame(gameLoop); // Save the frame id
 }
+
+// Update your reset/start logic:
+startBtn.addEventListener('click', () => {
+  // Always end the current game and start over
+  gameActive = false; // End any running game
+  if (animationId) {
+    cancelAnimationFrame(animationId); // Stop previous loop
+    animationId = null;
+  }
+  resetGame();
+  factBox.classList.add('hidden');
+  startBtn.textContent = "Reset";
+  gameActive = true;
+  gameLoop();
+});
+
+pauseBtn.addEventListener('click', () => {
+  if (!gameActive) return;
+  paused = !paused;
+  pauseBtn.textContent = paused ? "Resume" : "Pause";
+  if (!paused) gameLoop();
+});
 
 document.addEventListener('keydown', e => {
   if (!gameActive) return;
@@ -226,10 +377,19 @@ canvas.addEventListener('mousemove', (e) => {
   drop.x = mouseX;
 });
 
-startBtn.addEventListener('click', () => {
-  resetGame();
-  factBox.classList.add('hidden');
-  startBtn.disabled = true;
-  gameActive = true;
-  gameLoop();
-});
+function drawLives() {
+  const heartSize = 24;
+  const padding = 10;
+  for (let i = 0; i < 3; i++) {
+    const x = canvas.width - padding - (heartSize + 8) * i;
+    const y = padding + heartSize / 2;
+    ctx.save();
+    ctx.font = `${heartSize}px Arial`;
+    ctx.globalAlpha = (i < lives) ? 1 : 0.2;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("❤️", x, y);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+}
