@@ -78,31 +78,22 @@ function spawnCollectible() {
   }
 }
 
+const charityWaterImg = new Image();
+charityWaterImg.src = 'charitywater.png'; // Make sure this path is correct
+
 function drawDrop() {
-  // Draw a bucket instead of a drop
-  const bucketWidth = 50;
-  const bucketHeight = 30;
-  const bucketX = drop.x - bucketWidth / 2;
-  const bucketY = drop.y - bucketHeight / 2;
-
-  // Bucket base
-  ctx.fillStyle = '#8d6e63';
-  ctx.fillRect(bucketX, bucketY, bucketWidth, bucketHeight);
-
-  // Bucket rim (arc)
-  ctx.beginPath();
-  ctx.ellipse(drop.x, bucketY, bucketWidth / 2, 10, 0, 0, Math.PI, true);
-  ctx.fillStyle = '#a1887f';
-  ctx.fill();
-  ctx.closePath();
-
-  // Optional: bucket handle
-  ctx.beginPath();
-  ctx.arc(drop.x, bucketY, bucketWidth / 2, Math.PI, 2 * Math.PI, false);
-  ctx.strokeStyle = '#6d4c41';
-  ctx.lineWidth = 3;
-  ctx.stroke();
-  ctx.closePath();
+  const iconWidth = 70;
+  const iconHeight = 85;
+  // Draw the icon centered at drop.x, drop.y
+  ctx.save();
+  ctx.drawImage(
+    charityWaterImg,
+    drop.x - iconWidth / 4,
+    drop.y - iconHeight / 2,
+    iconWidth,
+    iconHeight
+  );
+  ctx.restore();
 }
 
 function drawObstacles() {
@@ -307,6 +298,8 @@ function gameLoop() {
   if (!gameActive || paused) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  drawCharityWaterBrand(); // <-- Add this line
+
   drawDrop();
   drawObstacles();
   drawCollectibles();
@@ -392,4 +385,47 @@ function drawLives() {
     ctx.globalAlpha = 1;
     ctx.restore();
   }
+}
+
+function drawCharityWaterBrand() {
+  const iconSize = 32;
+  const paddingY = 10;
+  const creamy = "#fffde7";
+  const text = "Charity: water";
+  ctx.save();
+
+  // Set font and measure text
+  ctx.font = "bold 16px Arial";
+  const textHeight = 16; // Approximate font size
+  const textWidth = ctx.measureText(text).width;
+  const totalWidth = iconSize + 10 + textWidth + 20; // 10px spacing, 20px padding
+  const totalHeight = Math.max(iconSize, textHeight) + 8;
+
+  // Center horizontally
+  const x = (canvas.width - totalWidth) / 2;
+  const y = paddingY;
+
+  // Draw creamy background
+  ctx.fillStyle = creamy;
+  ctx.strokeStyle = "#ffd600";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(x, y, totalWidth, totalHeight, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  // Vertically center icon and text within the background
+  const centerY = y + totalHeight / 2;
+
+  // Draw icon
+  ctx.drawImage(charityWaterImg, x + 10, centerY - iconSize / 2, iconSize, iconSize);
+
+  // Draw text
+  ctx.font = "bold 16px Arial";
+  ctx.fillStyle = "#000000";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + iconSize + 20, centerY);
+
+  ctx.restore();
 }
