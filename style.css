@@ -1,0 +1,40 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #e0f7fa;
+}
+
+#gameCanvas {
+  background: #b3e5fc;
+  border: 2px solid #0288d1;
+  display: block;
+  margin: 0 auto 20px auto;
+}
+
+#score {
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+#startBtn {
+  padding: 10px 20px;
+  font-size: 1em;
+  background: #0288d1;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#factBox {
+  margin-top: 20px;
+  padding: 15px;
+  background: #fffde7;
+  border: 1px solid #ffd600;
+  border-radius: 5px;
+  display: inline-block;
+}
+
+.hidden {
+  display: none;
+}
